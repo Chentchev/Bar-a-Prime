@@ -4,6 +4,7 @@ const express = require('express');
 const cors = require('cors');
 
 const { currentPlayer } = require('./middleware/currentPlayer');
+const asyncHandler = require('./middleware/asyncHandler');
 const { errorHandler } = require('./middleware/errorHandler');
 
 const playersRoutes = require('./routes/players.routes');
@@ -14,7 +15,7 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
-app.use(currentPlayer);
+app.use(asyncHandler(currentPlayer));
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 

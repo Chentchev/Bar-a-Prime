@@ -1,19 +1,36 @@
 const fs = require('fs');
 const path = require('path');
-const Database = require('better-sqlite3');
+const { Pool } = require('pg');
 
-const DATA_DIR = path.join(__dirname, '..', '..', 'data');
-const DB_PATH = path.join(DATA_DIR, 'pronos.db');
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
 
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
+async function init() {
+  const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
+  await pool.query(schema);
 }
 
-const db = new Database(DB_PATH);
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
+// Execute plusieurs requetes dans une transaction, sur une seule connexion
+// dediee. fn recoit ce client (pas le pool) pour que toutes ses requetes
+// fassent partie de la meme transaction.
+async function withTransaction(fn) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await fn(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
 
-const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
-db.exec(schema);
-
-module.exports = db;
+module.exports = {
+  query: (text, params) => pool.query(text, params),
+  withTransaction,
+  init,
+};

@@ -4,30 +4,30 @@ const db = require('../db');
 // bets.controller.js). A la resolution, on credite donc uniquement le gain
 // des gagnants : amount * odds_at_bet_time. Les perdants ne recuperent rien,
 // leur solde a deja ete ampute de leur mise.
-const resolveEvent = db.transaction((eventId, winningOutcomeId) => {
-  const outcomes = db.prepare('SELECT id FROM outcomes WHERE event_id = ?').all(eventId);
-  const outcomeIds = outcomes.map((o) => o.id);
+async function resolveEvent(eventId, winningOutcomeId) {
+  await db.withTransaction(async (client) => {
+    const { rows: outcomes } = await client.query('SELECT id FROM outcomes WHERE event_id = $1', [eventId]);
+    const outcomeIds = outcomes.map((o) => o.id);
 
-  const allBets = db
-    .prepare(`SELECT * FROM bets WHERE outcome_id IN (${outcomeIds.map(() => '?').join(',')})`)
-    .all(...outcomeIds);
+    const { rows: allBets } = await client.query('SELECT * FROM bets WHERE outcome_id = ANY($1::int[])', [
+      outcomeIds,
+    ]);
 
-  const markWon = db.prepare('UPDATE bets SET result = ?, payout = ? WHERE id = ?');
-  const creditPlayer = db.prepare('UPDATE players SET balance = balance + ? WHERE id = ?');
-
-  for (const bet of allBets) {
-    if (bet.outcome_id === winningOutcomeId) {
-      const payout = Math.round(bet.amount * bet.odds_at_bet_time);
-      markWon.run('won', payout, bet.id);
-      creditPlayer.run(payout, bet.player_id);
-    } else {
-      markWon.run('lost', 0, bet.id);
+    for (const bet of allBets) {
+      if (bet.outcome_id === winningOutcomeId) {
+        const payout = Math.round(bet.amount * bet.odds_at_bet_time);
+        await client.query('UPDATE bets SET result = $1, payout = $2 WHERE id = $3', ['won', payout, bet.id]);
+        await client.query('UPDATE players SET balance = balance + $1 WHERE id = $2', [payout, bet.player_id]);
+      } else {
+        await client.query('UPDATE bets SET result = $1, payout = $2 WHERE id = $3', ['lost', 0, bet.id]);
+      }
     }
-  }
 
-  db.prepare(
-    `UPDATE events SET status = 'resolved', resolved_outcome_id = ?, resolved_at = datetime('now') WHERE id = ?`
-  ).run(winningOutcomeId, eventId);
-});
+    await client.query(
+      `UPDATE events SET status = 'resolved', resolved_outcome_id = $1, resolved_at = now() WHERE id = $2`,
+      [winningOutcomeId, eventId]
+    );
+  });
+}
 
 module.exports = { resolveEvent };

@@ -4,37 +4,40 @@ const { HttpError } = require('../middleware/errorHandler');
 // Place une mise : verifie que le pari est ouvert, que la deadline n'est pas
 // depassee et que le joueur a assez de solde, puis debite immediatement le
 // solde (evite qu'un joueur mise plusieurs fois plus que ce qu'il possede).
-const placeBet = db.transaction((player, outcomeId, amount) => {
-  const outcome = db.prepare('SELECT * FROM outcomes WHERE id = ?').get(outcomeId);
-  if (!outcome) {
-    throw new HttpError(404, 'Issue introuvable');
-  }
+async function placeBet(player, outcomeId, amount) {
+  return db.withTransaction(async (client) => {
+    const { rows: outcomeRows } = await client.query('SELECT * FROM outcomes WHERE id = $1', [outcomeId]);
+    const outcome = outcomeRows[0];
+    if (!outcome) {
+      throw new HttpError(404, 'Issue introuvable');
+    }
 
-  const event = db.prepare('SELECT * FROM events WHERE id = ?').get(outcome.event_id);
-  if (event.status !== 'open') {
-    throw new HttpError(409, "Ce pari n'accepte plus de mises");
-  }
-  if (event.betting_deadline && new Date(event.betting_deadline) < new Date()) {
-    throw new HttpError(409, 'La date limite de mise est depassee');
-  }
+    const { rows: eventRows } = await client.query('SELECT * FROM events WHERE id = $1', [outcome.event_id]);
+    const event = eventRows[0];
+    if (event.status !== 'open') {
+      throw new HttpError(409, "Ce pari n'accepte plus de mises");
+    }
+    if (event.betting_deadline && new Date(event.betting_deadline) < new Date()) {
+      throw new HttpError(409, 'La date limite de mise est depassee');
+    }
 
-  if (amount > player.balance) {
-    throw new HttpError(400, 'Solde insuffisant');
-  }
+    if (amount > player.balance) {
+      throw new HttpError(400, 'Solde insuffisant');
+    }
 
-  db.prepare('UPDATE players SET balance = balance - ? WHERE id = ?').run(amount, player.id);
+    await client.query('UPDATE players SET balance = balance - $1 WHERE id = $2', [amount, player.id]);
 
-  const info = db
-    .prepare(
+    const { rows } = await client.query(
       `INSERT INTO bets (player_id, outcome_id, amount, odds_at_bet_time)
-       VALUES (?, ?, ?, ?)`
-    )
-    .run(player.id, outcomeId, amount, outcome.odds);
+       VALUES ($1, $2, $3, $4) RETURNING id`,
+      [player.id, outcomeId, amount, outcome.odds]
+    );
 
-  return info.lastInsertRowid;
-});
+    return rows[0].id;
+  });
+}
 
-function createBet(req, res) {
+async function createBet(req, res) {
   const { outcomeId, amount } = req.body;
   const parsedAmount = Number(amount);
 
@@ -45,15 +48,15 @@ function createBet(req, res) {
     throw new HttpError(400, 'La mise doit etre un nombre entier positif');
   }
 
-  const betId = placeBet(req.player, outcomeId, parsedAmount);
+  const betId = await placeBet(req.player, outcomeId, parsedAmount);
 
-  const row = db
-    .prepare(
-      `SELECT bets.*, players.balance AS playerBalance
-       FROM bets JOIN players ON players.id = bets.player_id
-       WHERE bets.id = ?`
-    )
-    .get(betId);
+  const { rows } = await db.query(
+    `SELECT bets.*, players.balance AS "playerBalance"
+     FROM bets JOIN players ON players.id = bets.player_id
+     WHERE bets.id = $1`,
+    [betId]
+  );
+  const row = rows[0];
 
   res.status(201).json({
     id: row.id,

@@ -1,0 +1,20 @@
+databases:
+  - name: bar-a-prime-db
+    plan: free
+
+services:
+  - type: web
+    name: bar-a-prime
+    env: node
+    plan: free
+    buildCommand: npm run install:all && npm run build
+    startCommand: npm start
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: bar-a-prime-db
+          property: connectionString
+      - key: ADMIN_PSEUDOS
+        value: Alex
+      - key: STARTING_BALANCE
+        value: "1000"

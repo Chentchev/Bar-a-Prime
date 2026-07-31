@@ -1,13 +1,14 @@
 const express = require('express');
+const asyncHandler = require('../middleware/asyncHandler');
 const players = require('../controllers/players.controller');
 
 const router = express.Router();
 
-router.get('/players', players.listPlayers);
-router.post('/players', players.createPlayer);
-router.get('/players/:id', players.getPlayer);
-router.get('/players/:id/bets', players.getPlayerBets);
+router.get('/players', asyncHandler(players.listPlayers));
+router.post('/players', asyncHandler(players.createPlayer));
+router.get('/players/:id', asyncHandler(players.getPlayer));
+router.get('/players/:id/bets', asyncHandler(players.getPlayerBets));
 
-router.get('/leaderboard', players.getLeaderboard);
+router.get('/leaderboard', asyncHandler(players.getLeaderboard));
 
 module.exports = router;

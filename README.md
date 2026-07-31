@@ -2,21 +2,31 @@
 
 Web app "pronos entre potes" : on parie des points virtuels sur ce qui va se passer pendant le séjour, avec des cotes fixées à la main par les admins.
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/chentchev/bar-a-prime)
+
 ## Stack
 
-- **Backend** : Node.js / Express + SQLite (`better-sqlite3`)
-- **Frontend** : React + Vite + Tailwind CSS v4 + React Router
+- **Backend** : Node.js / Express + PostgreSQL (`pg`)
+- **Frontend** : React + Vite + Tailwind CSS v4 + React Router, installable en PWA
 
 ## Backend
 
+Il faut un Postgres accessible. En local, le plus simple est d'en lancer un via Docker :
+
+```bash
+docker run --name bar-a-prime-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=bar_a_prime -p 5432:5432 -d postgres:16
+```
+
+Puis :
+
 ```bash
 cd server
-cp .env.example .env   # ajuster ADMIN_PSEUDOS avec les pseudos des admins
+cp .env.example .env   # ajuster DATABASE_URL et ADMIN_PSEUDOS
 npm install
 npm start               # ou npm run dev (redémarre au changement de fichier)
 ```
 
-L'API écoute sur `http://localhost:3001` (configurable via `PORT`). La base SQLite est créée automatiquement dans `server/data/pronos.db` au premier lancement.
+L'API écoute sur `http://localhost:3001` (configurable via `PORT`). Les tables sont créées automatiquement au démarrage si elles n'existent pas encore (`server/src/db/schema.sql`).
 
 ### Identification
 
@@ -52,16 +62,24 @@ L'app tourne sur `http://localhost:5173` (le dev server proxy `/api` vers `http:
 
 ## Tout lancer en une commande (dev)
 
-Depuis la racine :
+Depuis la racine (Postgres doit déjà tourner, cf. plus haut) :
 
 ```bash
 npm run install:all   # installe server + client
 npm run dev            # lance les deux en parallèle (concurrently)
 ```
 
-## Déploiement (self-hosted ou Render/Railway)
+## Déploiement gratuit sur Render (recommandé)
 
-En production, le backend sert directement le build du frontend : un seul process, un seul port, rien d'autre à configurer côté hébergeur.
+Le bouton en haut du README déploie directement le blueprint `render.yaml` : un service web Node (build `npm run install:all && npm run build`, start `npm start`) + une base Postgres gratuite, reliés automatiquement via `DATABASE_URL`.
+
+Pourquoi Postgres plutôt que SQLite : les services web gratuits de Render redémarrent à zéro après une période d'inactivité (le disque local n'est pas persistant sur ce plan), ce qui aurait remis les scores à zéro entre deux sessions de jeu. La base Postgres gratuite, elle, est un service managé à part qui garde ses données indépendamment des redémarrages du serveur web — parfait pour un séjour de plusieurs jours. Seule limite : une base Postgres gratuite Render expire au bout de 30 jours, largement suffisant pour des vacances.
+
+Après le déploiement, va dans les paramètres du service pour ajuster `ADMIN_PSEUDOS` avec les pseudos de vos admins, puis partage l'URL Render à tes potes.
+
+## Déploiement self-hosted (PC perso)
+
+En production, le backend sert directement le build du frontend : un seul process, un seul port.
 
 ```bash
 npm run install:all
@@ -69,11 +87,11 @@ npm run build   # build le client dans client/dist
 npm start        # démarre express, qui sert l'API + le front sur le même port (PORT, def. 3001)
 ```
 
-Sur Render/Railway : un seul service Node, build command `npm run install:all && npm run build`, start command `npm start`, variable d'env `ADMIN_PSEUDOS` (et `PORT` si besoin). La base SQLite vit dans `server/data/` — pensez à un disque persistant si l'hébergeur redémarre le conteneur entre les déploiements, sinon les points repartent de zéro.
+Il faut toujours un `DATABASE_URL` valide (Postgres local via Docker, ou une instance distante).
 
 ## Installer l'app sur son téléphone (PWA)
 
-L'app est une PWA installable : pas de store, pas de compte développeur. Une fois le site ouvert (en local sur le même WiFi ou déployé sur Render/Railway) :
+L'app est une PWA installable : pas de store, pas de compte développeur. Une fois le site ouvert (Render ou même WiFi local) :
 
 - **Android (Chrome)** : menu ⋮ → "Installer l'application" (ou un bandeau propose direct l'installation).
 - **iPhone (Safari)** : bouton Partager 􀈂 → "Sur l'écran d'accueil".
