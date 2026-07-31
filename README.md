@@ -70,3 +70,12 @@ npm start        # démarre express, qui sert l'API + le front sur le même port
 ```
 
 Sur Render/Railway : un seul service Node, build command `npm run install:all && npm run build`, start command `npm start`, variable d'env `ADMIN_PSEUDOS` (et `PORT` si besoin). La base SQLite vit dans `server/data/` — pensez à un disque persistant si l'hébergeur redémarre le conteneur entre les déploiements, sinon les points repartent de zéro.
+
+## Installer l'app sur son téléphone (PWA)
+
+L'app est une PWA installable : pas de store, pas de compte développeur. Une fois le site ouvert (en local sur le même WiFi ou déployé sur Render/Railway) :
+
+- **Android (Chrome)** : menu ⋮ → "Installer l'application" (ou un bandeau propose direct l'installation).
+- **iPhone (Safari)** : bouton Partager 􀈂 → "Sur l'écran d'accueil".
+
+Ça ajoute une icône comme une vraie app (plein écran, sans barre d'adresse). Le service worker précharge l'interface pour un démarrage rapide, mais les données (paris, mises, soldes) viennent toujours du réseau en direct — pas de mode hors-ligne pour jouer, juste pour l'affichage de l'app.
