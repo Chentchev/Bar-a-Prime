@@ -30,7 +30,10 @@ function serializeEvent(row) {
     resolvedOutcomeId: row.resolved_outcome_id,
     createdAt: row.created_at,
     resolvedAt: row.resolved_at,
-    outcomes: outcomesWithStats(row.id),
+    outcomes: outcomesWithStats(row.id).map((outcome) => ({
+      ...outcome,
+      isWinner: row.resolved_outcome_id === outcome.id,
+    })),
   };
 }
 

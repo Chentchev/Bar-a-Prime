@@ -1,0 +1,99 @@
+import { useState } from 'react';
+import { api } from '../api/client';
+import { usePlayer } from '../context/PlayerContext';
+import { usePolling } from '../hooks/usePolling';
+import CreateEventForm from '../components/events/CreateEventForm';
+
+function AdminEventRow({ event, onChanged }) {
+  const { player } = usePlayer();
+  const [busy, setBusy] = useState(false);
+
+  async function toggleStatus() {
+    setBusy(true);
+    try {
+      await api.updateEvent(player.id, event.id, { status: event.status === 'open' ? 'closed' : 'open' });
+      onChanged();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function resolve(outcome) {
+    if (!confirm(`Confirmer "${outcome.label}" comme issue gagnante ? Cette action est définitive.`)) return;
+    setBusy(true);
+    try {
+      await api.resolveEvent(player.id, event.id, outcome.id);
+      onChanged();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <h3 className="font-semibold">{event.title}</h3>
+        <button
+          onClick={toggleStatus}
+          disabled={busy}
+          className="shrink-0 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 disabled:opacity-50 dark:bg-slate-800 dark:text-slate-300"
+        >
+          {event.status === 'open' ? 'Clôturer les mises' : 'Rouvrir les mises'}
+        </button>
+      </div>
+
+      <p className="mb-2 text-xs text-slate-400">Cliquer sur une issue pour la déclarer gagnante :</p>
+      <div className="flex flex-wrap gap-2">
+        {event.outcomes.map((o) => (
+          <button
+            key={o.id}
+            onClick={() => resolve(o)}
+            disabled={busy}
+            className="rounded-lg bg-violet-50 px-3 py-1.5 text-sm font-medium text-violet-700 ring-1 ring-violet-200 disabled:opacity-50 dark:bg-violet-950 dark:text-violet-300 dark:ring-violet-900"
+          >
+            {o.label} (x{o.odds}) — {o.totalStaked} pts
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function AdminPage() {
+  const [showForm, setShowForm] = useState(false);
+  const { data: events, refresh } = usePolling(() => api.listEvents(), { interval: 6000 });
+
+  const pending = events?.filter((e) => e.status !== 'resolved') ?? [];
+
+  return (
+    <div className="mx-auto max-w-lg">
+      <h1 className="mb-4 text-xl font-bold">⚙️ Admin</h1>
+
+      <button
+        onClick={() => setShowForm((v) => !v)}
+        className="mb-4 w-full rounded-xl bg-violet-600 py-3 font-semibold text-white"
+      >
+        {showForm ? 'Fermer' : '+ Nouveau pari'}
+      </button>
+
+      {showForm && (
+        <div className="mb-4">
+          <CreateEventForm
+            onCreated={() => {
+              setShowForm(false);
+              refresh();
+            }}
+          />
+        </div>
+      )}
+
+      <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">Paris en cours</h2>
+      {pending.length === 0 && <p className="text-sm text-slate-400">Aucun pari à gérer.</p>}
+      <div className="flex flex-col gap-3">
+        {pending.map((event) => (
+          <AdminEventRow key={event.id} event={event} onChanged={refresh} />
+        ))}
+      </div>
+    </div>
+  );
+}

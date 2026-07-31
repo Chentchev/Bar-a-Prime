@@ -5,7 +5,7 @@ Web app "pronos entre potes" : on parie des points virtuels sur ce qui va se pas
 ## Stack
 
 - **Backend** : Node.js / Express + SQLite (`better-sqlite3`)
-- **Frontend** : React + Vite + Tailwind (à venir)
+- **Frontend** : React + Vite + Tailwind CSS v4 + React Router
 
 ## Backend
 
@@ -38,4 +38,23 @@ Pas de mot de passe : un joueur crée son profil (`POST /api/players`) et récup
 
 ## Frontend
 
-À venir.
+```bash
+cd client
+npm install
+npm run dev
+```
+
+L'app tourne sur `http://localhost:5173` (le dev server proxy `/api` vers `http://localhost:3001`, donc lancez aussi le backend en parallèle).
+
+- **Profil** : pas de mot de passe, le choix/création du pseudo est proposé au premier accès et l'id du joueur est gardé en `localStorage`.
+- **Pages** : Paris (liste filtrable ouverts/clôturés/résolus), détail d'un pari avec mise, Classement, Mon profil (solde + historique), Admin (création/clôture/résolution — visible seulement si `isAdmin`).
+- **"Temps réel"** : polling léger (toutes les 4-6s) sur les listes et le classement, pas de websockets.
+
+## Tout lancer en une commande
+
+Depuis la racine :
+
+```bash
+npm run install:all   # installe server + client
+npm run dev            # lance les deux en parallèle (concurrently)
+```
