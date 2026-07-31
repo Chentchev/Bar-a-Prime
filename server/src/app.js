@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 
@@ -20,7 +22,17 @@ app.use('/api', playersRoutes);
 app.use('/api', eventsRoutes);
 app.use('/api', betsRoutes);
 
-app.use((req, res) => res.status(404).json({ error: 'Route inconnue' }));
+app.use('/api', (req, res) => res.status(404).json({ error: 'Route inconnue' }));
+
+// Sert le build du frontend s'il existe (deploiement en un seul service,
+// type Render/Railway : "npm run build" puis "npm start"). En dev, le
+// frontend tourne separement via "npm run dev --prefix client".
+const clientDist = path.join(__dirname, '..', '..', 'client', 'dist');
+if (fs.existsSync(clientDist)) {
+  app.use(express.static(clientDist));
+  app.get(/.*/, (req, res) => res.sendFile(path.join(clientDist, 'index.html')));
+}
+
 app.use(errorHandler);
 
 module.exports = app;

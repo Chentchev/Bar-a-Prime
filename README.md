@@ -50,7 +50,7 @@ L'app tourne sur `http://localhost:5173` (le dev server proxy `/api` vers `http:
 - **Pages** : Paris (liste filtrable ouverts/clôturés/résolus), détail d'un pari avec mise, Classement, Mon profil (solde + historique), Admin (création/clôture/résolution — visible seulement si `isAdmin`).
 - **"Temps réel"** : polling léger (toutes les 4-6s) sur les listes et le classement, pas de websockets.
 
-## Tout lancer en une commande
+## Tout lancer en une commande (dev)
 
 Depuis la racine :
 
@@ -58,3 +58,15 @@ Depuis la racine :
 npm run install:all   # installe server + client
 npm run dev            # lance les deux en parallèle (concurrently)
 ```
+
+## Déploiement (self-hosted ou Render/Railway)
+
+En production, le backend sert directement le build du frontend : un seul process, un seul port, rien d'autre à configurer côté hébergeur.
+
+```bash
+npm run install:all
+npm run build   # build le client dans client/dist
+npm start        # démarre express, qui sert l'API + le front sur le même port (PORT, def. 3001)
+```
+
+Sur Render/Railway : un seul service Node, build command `npm run install:all && npm run build`, start command `npm start`, variable d'env `ADMIN_PSEUDOS` (et `PORT` si besoin). La base SQLite vit dans `server/data/` — pensez à un disque persistant si l'hébergeur redémarre le conteneur entre les déploiements, sinon les points repartent de zéro.
