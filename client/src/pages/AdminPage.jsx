@@ -81,11 +81,7 @@ function StarterImport({ existingEvents, onImported }) {
         continue;
       }
       try {
-        // Cree "clos" : sinon la mise obligatoire forcerait tout le monde a
-        // parier sur les 61 d'un coup. L'admin rouvre les mises un par un
-        // au fil du sejour (bouton "Rouvrir les mises").
-        const createdEvent = await api.createEvent(player.id, item);
-        await api.updateEvent(player.id, createdEvent.id, { status: 'closed' });
+        await api.createEvent(player.id, item);
         created += 1;
       } catch {
         skipped += 1;
@@ -103,9 +99,8 @@ function StarterImport({ existingEvents, onImported }) {
         Import de départ
       </h2>
       <p className="mb-3 text-sm text-violet-800 dark:text-violet-200">
-        Crée d'un coup les {starterEvents.length} paris nettoyés de la liste du groupe, en statut{' '}
-        <strong>clôturé</strong> (cotes 2/2 par défaut, à ajuster ensuite). Ils n'apparaissent pas comme "à parier"
-        tant que tu ne cliques pas sur "Rouvrir les mises" — à toi de les ouvrir au fil du séjour. Les titres déjà
+        Crée d'un coup les {starterEvents.length} paris nettoyés de la liste du groupe, directement{' '}
+        <strong>ouverts</strong> (cotes 2/2 par défaut, à ajuster ensuite dans chaque pari). Les titres déjà
         présents sont ignorés, pas de doublons.
       </p>
       <button

@@ -51,7 +51,7 @@ Pas de mot de passe : un joueur crée son profil (`POST /api/players`) et récup
 
 ### Règle : mise obligatoire
 
-Chaque pari ouvert doit recevoir au moins `MIN_BET_AMOUNT` points (défaut 10, configurable en env) de la part de chaque joueur. Tant qu'il reste des paris non couverts, le frontend affiche un écran plein écran non fermable (sauf pour changer de profil) obligeant à choisir une issue et miser dessus — jamais de mise automatique choisie par le système, c'est toujours au joueur de trancher. Un joueur dont le solde passe sous ce minimum est exempté (impossible d'exiger ce qu'il n'a plus).
+Chaque pari ouvert doit recevoir au moins `MIN_BET_AMOUNT` points (défaut 10, configurable en env) de la part de chaque joueur. Un bandeau de rappel (non bloquant) s'affiche en bas de l'onglet Paris tant qu'il reste des paris sans mise du joueur courant, avec un accès direct pour miser dessus — jamais de mise automatique choisie par le système, c'est toujours au joueur de trancher, et il reste libre de naviguer partout ailleurs entre-temps. Un joueur dont le solde passe sous ce minimum est exempté (impossible d'exiger ce qu'il n'a plus).
 
 ## Frontend
 

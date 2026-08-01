@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { api } from '../api/client';
 import { usePolling } from '../hooks/usePolling';
 import EventCard from '../components/events/EventCard';
+import PendingBetsReminder from '../components/bets/PendingBetsReminder';
 
 const TABS = [
   { value: 'open', label: 'Ouverts' },
@@ -40,6 +41,8 @@ export default function HomePage() {
           <EventCard key={event.id} event={event} />
         ))}
       </div>
+
+      <PendingBetsReminder />
     </div>
   );
 }
