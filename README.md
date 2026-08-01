@@ -42,7 +42,7 @@ Pas de mot de passe : un joueur crée son profil (`POST /api/players`) et récup
 | GET | `/api/leaderboard` | Classement par solde |
 | GET | `/api/events` | Lister les paris (`?status=open`) |
 | POST | `/api/events` | Créer un pari (admin) |
-| PATCH | `/api/events/:id` | Ouvrir/clôturer/éditer un pari (admin) |
+| PATCH | `/api/events/:id` | Ouvrir/clôturer/éditer un pari, y compris les cotes de ses issues (admin) |
 | POST | `/api/events/:id/resolve` | Résoudre un pari et redistribuer les gains (admin) |
 | DELETE | `/api/events/:id` | Supprimer un pari (admin, refusé si des mises existent déjà) |
 | POST | `/api/bets` | Miser sur une issue |
@@ -53,6 +53,13 @@ Pas de mot de passe : un joueur crée son profil (`POST /api/players`) et récup
 ### Règle : mise fixe obligatoire
 
 Chaque mise vaut exactement `BET_AMOUNT` points (défaut 20, configurable en env) — ni plus, ni moins. Un bandeau de rappel (non bloquant) s'affiche en bas de l'onglet Paris tant qu'il reste des paris sans mise du joueur courant, avec un accès direct pour miser dessus — jamais de mise automatique choisie par le système, c'est toujours au joueur de trancher, et il reste libre de naviguer partout ailleurs entre-temps. Un joueur dont le solde passe sous `BET_AMOUNT` est exempté (impossible d'exiger ce qu'il n'a plus).
+
+### Outils d'admin en masse (client/src/data/)
+
+- `starterEvents.js` : liste de paris prêts à l'emploi (titre + catégorie), importée d'un coup via le bouton "Import de départ" dans Admin (dédoublonne par titre).
+- `betOdds.js` : cotes personnalisées par titre (`{ "Titre exact": [coteOui, coteNon] }`), appliquées via le bouton "Appliquer les cotes" dans Admin — matche par titre contre les paris existants, ignore ceux qui ont été supprimés depuis.
+
+Ces deux boutons tournent depuis le navigateur de l'admin (pas de script serveur à lancer) : modifier le fichier, pousser sur la branche, redéployer, puis cliquer le bouton correspondant dans l'app.
 
 ## Frontend
 

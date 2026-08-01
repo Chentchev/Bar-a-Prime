@@ -95,8 +95,8 @@ async function createEvent(req, res) {
   res.status(201).json(await serializeEvent(rows[0]));
 }
 
-// Permet a l'admin de rouvrir/clore les mises, ou d'ajuster les infos tant
-// que le pari n'est pas resolu.
+// Permet a l'admin de rouvrir/clore les mises, d'ajuster les infos, ou de
+// changer les cotes des issues (tant que le pari n'est pas resolu).
 async function updateEvent(req, res) {
   const { rows: eventRows } = await db.query('SELECT * FROM events WHERE id = $1', [req.params.id]);
   const event = eventRows[0];
@@ -107,21 +107,41 @@ async function updateEvent(req, res) {
     throw new HttpError(409, 'Ce pari est deja resolu, il ne peut plus etre modifie');
   }
 
-  const { status, title, description, category, bettingDeadline } = req.body;
+  const { status, title, description, category, bettingDeadline, outcomes } = req.body;
   if (status && !['open', 'closed'].includes(status)) {
     throw new HttpError(400, 'Statut invalide (open ou closed uniquement ici)');
   }
+  if (outcomes) {
+    for (const outcome of outcomes) {
+      const odds = Number(outcome.odds);
+      if (!outcome.id || !Number.isFinite(odds) || odds < 1) {
+        throw new HttpError(400, 'Cote invalide (id + odds >= 1.0 requis pour chaque issue)');
+      }
+    }
+  }
 
-  await db.query(
-    `UPDATE events SET
-      status = COALESCE($1, status),
-      title = COALESCE($2, title),
-      description = COALESCE($3, description),
-      category = COALESCE($4, category),
-      betting_deadline = COALESCE($5, betting_deadline)
-    WHERE id = $6`,
-    [status || null, title || null, description || null, category || null, bettingDeadline || null, event.id]
-  );
+  await db.withTransaction(async (client) => {
+    await client.query(
+      `UPDATE events SET
+        status = COALESCE($1, status),
+        title = COALESCE($2, title),
+        description = COALESCE($3, description),
+        category = COALESCE($4, category),
+        betting_deadline = COALESCE($5, betting_deadline)
+      WHERE id = $6`,
+      [status || null, title || null, description || null, category || null, bettingDeadline || null, event.id]
+    );
+
+    if (outcomes) {
+      for (const outcome of outcomes) {
+        await client.query('UPDATE outcomes SET odds = $1 WHERE id = $2 AND event_id = $3', [
+          Number(outcome.odds),
+          outcome.id,
+          event.id,
+        ]);
+      }
+    }
+  });
 
   const { rows } = await db.query('SELECT * FROM events WHERE id = $1', [event.id]);
   res.json(await serializeEvent(rows[0]));

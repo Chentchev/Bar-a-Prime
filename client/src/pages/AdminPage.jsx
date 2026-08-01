@@ -5,6 +5,7 @@ import { useConfig } from '../context/ConfigContext';
 import { usePolling } from '../hooks/usePolling';
 import CreateEventForm from '../components/events/CreateEventForm';
 import { starterEvents } from '../data/starterEvents';
+import { betOdds } from '../data/betOdds';
 
 function AdminEventRow({ event, onChanged }) {
   const { player } = usePlayer();
@@ -143,6 +144,74 @@ function StarterImport({ existingEvents, onImported }) {
   );
 }
 
+function ApplyOdds({ existingEvents, onApplied }) {
+  const { player } = usePlayer();
+  const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState(null);
+
+  const matches = (existingEvents ?? []).filter((e) => betOdds[e.title]);
+
+  async function handleApply() {
+    setBusy(true);
+    setProgress(null);
+    let updated = 0;
+    let skipped = 0;
+
+    for (let i = 0; i < matches.length; i++) {
+      const event = matches[i];
+      setProgress({ done: i + 1, total: matches.length, updated, skipped });
+      const [oddsOui, oddsNon] = betOdds[event.title];
+      const outcomesPayload = event.outcomes.map((o) => {
+        if (o.label === 'Oui') return { id: o.id, odds: oddsOui };
+        if (o.label === 'Non') return { id: o.id, odds: oddsNon };
+        return null;
+      });
+
+      if (outcomesPayload.some((o) => o === null)) {
+        skipped += 1;
+        continue;
+      }
+
+      try {
+        await api.updateEvent(player.id, event.id, { outcomes: outcomesPayload });
+        updated += 1;
+      } catch {
+        skipped += 1;
+      }
+    }
+
+    setProgress({ done: matches.length, total: matches.length, updated, skipped });
+    setBusy(false);
+    onApplied();
+  }
+
+  return (
+    <div className="mb-4 rounded-2xl bg-emerald-50 p-4 ring-1 ring-emerald-200 dark:bg-emerald-950 dark:ring-emerald-900">
+      <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+        Appliquer les cotes
+      </h2>
+      <p className="mb-3 text-sm text-emerald-800 dark:text-emerald-200">
+        Met à jour les cotes des paris existants d'après <code>betOdds.js</code> ({matches.length} correspondance
+        {matches.length > 1 ? 's' : ''}). Les paris que tu as supprimés toi-même sont ignorés automatiquement.
+      </p>
+      <button
+        onClick={handleApply}
+        disabled={busy || matches.length === 0}
+        className="w-full rounded-xl bg-emerald-600 py-3 font-semibold text-white disabled:opacity-50"
+      >
+        {busy
+          ? `Application… ${progress?.done ?? 0}/${matches.length}`
+          : `Appliquer les cotes (${matches.length})`}
+      </button>
+      {!busy && progress && (
+        <p className="mt-2 text-sm text-emerald-700 dark:text-emerald-300">
+          {progress.updated} mis à jour, {progress.skipped} ignorés.
+        </p>
+      )}
+    </div>
+  );
+}
+
 function DangerZone({ onReset }) {
   const { player, refreshPlayer } = usePlayer();
   const { startingBalance } = useConfig();
@@ -212,6 +281,7 @@ export default function AdminPage() {
       )}
 
       <StarterImport existingEvents={events} onImported={refresh} />
+      <ApplyOdds existingEvents={events} onApplied={refresh} />
 
       <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">Paris en cours</h2>
       {pending.length === 0 && <p className="text-sm text-slate-400">Aucun pari à gérer.</p>}
