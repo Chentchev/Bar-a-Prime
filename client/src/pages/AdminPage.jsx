@@ -6,6 +6,7 @@ import { usePolling } from '../hooks/usePolling';
 import CreateEventForm from '../components/events/CreateEventForm';
 import { starterEvents } from '../data/starterEvents';
 import { betOdds } from '../data/betOdds';
+import { theoRobBatch } from '../data/theoRobBatch';
 
 function AdminEventRow({ event, onChanged }) {
   const { player } = usePlayer();
@@ -292,6 +293,93 @@ function ApplyOdds({ existingEvents, onApplied }) {
   );
 }
 
+function applyOutcomesByLabel(existingOutcomes, newOutcomes) {
+  return existingOutcomes.map((o) => {
+    const match = newOutcomes.find((n) => n.label === o.label);
+    return match ? { id: o.id, odds: match.odds } : null;
+  });
+}
+
+function TheoRobBatch({ existingEvents, onApplied }) {
+  const { player } = usePlayer();
+  const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState(null);
+
+  async function handleApply() {
+    setBusy(true);
+    setProgress(null);
+    let updated = 0;
+    let created = 0;
+    let skipped = 0;
+
+    for (let i = 0; i < theoRobBatch.length; i++) {
+      const patch = theoRobBatch[i];
+      setProgress({ done: i + 1, total: theoRobBatch.length, updated, created, skipped });
+
+      if (patch.match) {
+        const event = (existingEvents ?? []).find((e) => e.title === patch.match);
+        if (!event) {
+          skipped += 1;
+          continue;
+        }
+        const outcomesPayload = applyOutcomesByLabel(event.outcomes, patch.outcomes);
+        if (outcomesPayload.some((o) => o === null)) {
+          skipped += 1;
+          continue;
+        }
+        try {
+          await api.updateEvent(player.id, event.id, { title: patch.title, outcomes: outcomesPayload });
+          updated += 1;
+        } catch {
+          skipped += 1;
+        }
+      } else {
+        const alreadyExists = (existingEvents ?? []).some((e) => e.title === patch.title);
+        if (alreadyExists) {
+          skipped += 1;
+          continue;
+        }
+        try {
+          await api.createEvent(player.id, { title: patch.title, category: patch.category, outcomes: patch.outcomes });
+          created += 1;
+        } catch {
+          skipped += 1;
+        }
+      }
+    }
+
+    setProgress({ done: theoRobBatch.length, total: theoRobBatch.length, updated, created, skipped });
+    setBusy(false);
+    onApplied();
+  }
+
+  return (
+    <div className="mb-4 rounded-2xl bg-sky-50 p-4 ring-1 ring-sky-200 dark:bg-sky-950 dark:ring-sky-900">
+      <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">
+        Lot Théo &amp; Rob
+      </h2>
+      <p className="mb-3 text-sm text-sky-800 dark:text-sky-200">
+        Applique les {theoRobBatch.length} paris/cotes donnés pour Théo et Rob : met à jour titres/cotes des paris
+        existants qui matchent, crée les nouveaux (dont ceux à plusieurs issues comme "Rob choppe").
+      </p>
+      <button
+        onClick={handleApply}
+        disabled={busy}
+        className="w-full rounded-xl bg-sky-600 py-3 font-semibold text-white disabled:opacity-50"
+      >
+        {busy
+          ? `Application… ${progress?.done ?? 0}/${theoRobBatch.length}`
+          : `Appliquer le lot Théo & Rob (${theoRobBatch.length})`}
+      </button>
+      {!busy && progress && (
+        <p className="mt-2 text-sm text-sky-700 dark:text-sky-300">
+          {progress.updated} mis à jour, {progress.created} créés, {progress.skipped} ignorés.
+        </p>
+      )}
+    </div>
+  );
+}
+
 function DangerZone({ onReset }) {
   const { player, refreshPlayer } = usePlayer();
   const { startingBalance } = useConfig();
@@ -362,6 +450,7 @@ export default function AdminPage() {
 
       <StarterImport existingEvents={events} onImported={refresh} />
       <ApplyOdds existingEvents={events} onApplied={refresh} />
+      <TheoRobBatch existingEvents={events} onApplied={refresh} />
 
       <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">Paris en cours</h2>
       {pending.length === 0 && <p className="text-sm text-slate-400">Aucun pari à gérer.</p>}
