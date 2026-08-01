@@ -11,6 +11,7 @@ const playersRoutes = require('./routes/players.routes');
 const eventsRoutes = require('./routes/events.routes');
 const betsRoutes = require('./routes/bets.routes');
 const configRoutes = require('./routes/config.routes');
+const adminRoutes = require('./routes/admin.routes');
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.use('/api', playersRoutes);
 app.use('/api', eventsRoutes);
 app.use('/api', betsRoutes);
 app.use('/api', configRoutes);
+app.use('/api', adminRoutes);
 
 app.use('/api', (req, res) => res.status(404).json({ error: 'Route inconnue' }));
 

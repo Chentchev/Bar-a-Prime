@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { api } from '../api/client';
 import { usePlayer } from '../context/PlayerContext';
+import { useConfig } from '../context/ConfigContext';
 import { usePolling } from '../hooks/usePolling';
 import CreateEventForm from '../components/events/CreateEventForm';
 
@@ -59,6 +60,46 @@ function AdminEventRow({ event, onChanged }) {
   );
 }
 
+function DangerZone({ onReset }) {
+  const { player, refreshPlayer } = usePlayer();
+  const { startingBalance } = useConfig();
+  const [busy, setBusy] = useState(false);
+
+  async function handleReset() {
+    const confirmed = confirm(
+      `Réinitialiser TOUTE la partie ?\n\nTous les paris et mises seront supprimés, et chaque joueur repart avec ${startingBalance} points. Les profils (pseudos, admins) sont conservés. Cette action est définitive.`
+    );
+    if (!confirmed) return;
+
+    setBusy(true);
+    try {
+      await api.resetGame(player.id);
+      await refreshPlayer();
+      onReset();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mt-8 rounded-2xl border-2 border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950">
+      <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-red-600 dark:text-red-400">
+        Zone dangereuse
+      </h2>
+      <p className="mb-3 text-sm text-red-700 dark:text-red-300">
+        Supprime tous les paris et remet tout le monde à zéro. Pratique pour démarrer une nouvelle partie.
+      </p>
+      <button
+        onClick={handleReset}
+        disabled={busy}
+        className="w-full rounded-xl bg-red-600 py-3 font-semibold text-white disabled:opacity-50"
+      >
+        Réinitialiser la partie
+      </button>
+    </div>
+  );
+}
+
 export default function AdminPage() {
   const [showForm, setShowForm] = useState(false);
   const { data: events, refresh } = usePolling(() => api.listEvents(), { interval: 6000 });
@@ -94,6 +135,8 @@ export default function AdminPage() {
           <AdminEventRow key={event.id} event={event} onChanged={refresh} />
         ))}
       </div>
+
+      <DangerZone onReset={refresh} />
     </div>
   );
 }

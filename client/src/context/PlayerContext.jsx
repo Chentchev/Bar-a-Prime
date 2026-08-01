@@ -35,6 +35,15 @@ export function PlayerProvider({ children }) {
       .finally(() => setLoading(false));
   }, []);
 
+  // Rafraichit le solde en tache de fond (reinitialisation par un admin,
+  // resolution d'un pari...) sans attendre une action du joueur lui-meme.
+  useEffect(() => {
+    if (!player?.id) return;
+    const playerId = player.id;
+    const intervalId = setInterval(() => refreshPlayer(playerId), 6000);
+    return () => clearInterval(intervalId);
+  }, [player?.id, refreshPlayer]);
+
   const selectPlayer = useCallback((p) => {
     localStorage.setItem(STORAGE_KEY, p.id);
     setPlayer(p);

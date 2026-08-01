@@ -47,6 +47,7 @@ Pas de mot de passe : un joueur crée son profil (`POST /api/players`) et récup
 | POST | `/api/bets` | Miser sur une issue |
 | GET | `/api/players/:id/pending-events` | Paris ouverts sur lesquels ce joueur n'a pas encore misé |
 | GET | `/api/config` | Réglages exposés au frontend (`minBetAmount`, `startingBalance`) |
+| POST | `/api/admin/reset` | Réinitialise la partie : vide paris/mises, remet les soldes à `STARTING_BALANCE` (admin) |
 
 ### Règle : mise obligatoire
 

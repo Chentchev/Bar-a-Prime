@@ -41,4 +41,6 @@ export const api = {
 
   placeBet: (playerId, outcomeId, amount) =>
     request('/bets', { method: 'POST', body: { outcomeId, amount }, playerId }),
+
+  resetGame: (playerId) => request('/admin/reset', { method: 'POST', playerId }),
 };
