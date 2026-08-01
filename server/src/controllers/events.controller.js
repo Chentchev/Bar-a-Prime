@@ -186,4 +186,27 @@ async function getPendingEvents(req, res) {
   res.json(await Promise.all(rows.map(serializeEvent)));
 }
 
-module.exports = { listEvents, getEvent, createEvent, updateEvent, resolveEvent, getPendingEvents };
+// Supprime un pari qui n'a encore recu aucune mise (sinon on perdrait des
+// points deja engages : dans ce cas mieux vaut le cloturer que le supprimer).
+async function deleteEvent(req, res) {
+  const { rows: eventRows } = await db.query('SELECT * FROM events WHERE id = $1', [req.params.id]);
+  const event = eventRows[0];
+  if (!event) {
+    throw new HttpError(404, 'Pari introuvable');
+  }
+
+  const { rows: betRows } = await db.query(
+    `SELECT COUNT(*)::int AS count FROM bets
+     JOIN outcomes ON outcomes.id = bets.outcome_id
+     WHERE outcomes.event_id = $1`,
+    [event.id]
+  );
+  if (betRows[0].count > 0) {
+    throw new HttpError(409, 'Ce pari a déjà des mises, impossible à supprimer (clôture-le plutôt)');
+  }
+
+  await db.query('DELETE FROM events WHERE id = $1', [event.id]);
+  res.json({ ok: true });
+}
+
+module.exports = { listEvents, getEvent, createEvent, updateEvent, resolveEvent, getPendingEvents, deleteEvent };

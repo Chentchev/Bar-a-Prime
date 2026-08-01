@@ -38,6 +38,7 @@ export const api = {
   updateEvent: (playerId, id, payload) => request(`/events/${id}`, { method: 'PATCH', body: payload, playerId }),
   resolveEvent: (playerId, id, outcomeId) =>
     request(`/events/${id}/resolve`, { method: 'POST', body: { outcomeId }, playerId }),
+  deleteEvent: (playerId, id) => request(`/events/${id}`, { method: 'DELETE', playerId }),
 
   placeBet: (playerId, outcomeId, amount) =>
     request('/bets', { method: 'POST', body: { outcomeId, amount }, playerId }),

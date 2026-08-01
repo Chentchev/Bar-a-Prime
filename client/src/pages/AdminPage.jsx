@@ -31,17 +31,39 @@ function AdminEventRow({ event, onChanged }) {
     }
   }
 
+  async function remove() {
+    if (!confirm(`Supprimer définitivement "${event.title}" ?`)) return;
+    setBusy(true);
+    try {
+      await api.deleteEvent(player.id, event.id);
+      onChanged();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
       <div className="mb-2 flex items-center justify-between gap-2">
         <h3 className="font-semibold">{event.title}</h3>
-        <button
-          onClick={toggleStatus}
-          disabled={busy}
-          className="shrink-0 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 disabled:opacity-50 dark:bg-slate-800 dark:text-slate-300"
-        >
-          {event.status === 'open' ? 'Clôturer les mises' : 'Rouvrir les mises'}
-        </button>
+        <div className="flex shrink-0 gap-2">
+          <button
+            onClick={toggleStatus}
+            disabled={busy}
+            className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 disabled:opacity-50 dark:bg-slate-800 dark:text-slate-300"
+          >
+            {event.status === 'open' ? 'Clôturer les mises' : 'Rouvrir les mises'}
+          </button>
+          <button
+            onClick={remove}
+            disabled={busy}
+            className="rounded-full bg-red-50 px-3 py-1 text-xs font-medium text-red-600 disabled:opacity-50 dark:bg-red-950 dark:text-red-400"
+          >
+            Supprimer
+          </button>
+        </div>
       </div>
 
       <p className="mb-2 text-xs text-slate-400">Cliquer sur une issue pour la déclarer gagnante :</p>
