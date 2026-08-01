@@ -4,14 +4,14 @@
 // contre les paris deja existants dans la base (les paris que tu as
 // supprimes toi-meme sont simplement ignores, pas de souci).
 export const betOdds = {
-  'Théo appelle Malo': [2, 2],
-  'Théo ne peut pas boire parce qu\'il a un Hyrox en 2028': [2, 2],
-  'Théo boit un maté': [2, 2],
-  'Théo est bourré, il se perd dans Barcelone': [2, 2],
-  'Théo casse un objet': [2, 2],
-  'Théo se pisse dessus': [2, 2],
-  'Théo et Brik s\'éclipsent de la soirée': [2, 2],
-  'Théo rate l\'avion': [2, 2],
+  'Theve appelle Malo': [2, 2],
+  'Theve ne peut pas boire parce qu\'il a un Hyrox en 2028': [2, 2],
+  'Theve boit un maté': [2, 2],
+  'Theve est bourré, il se perd dans Barcelone': [2, 2],
+  'Theve casse un objet': [2, 2],
+  'Theve se pisse dessus': [2, 2],
+  'Theve et Brik s\'éclipsent de la soirée': [2, 2],
+  'Theve rate l\'avion': [2, 2],
 
   'Rob nous casse les couilles avec sa barbe': [2, 2],
   'Rob se lève en dernier chaque jour': [2, 2],
@@ -22,7 +22,7 @@ export const betOdds = {
   'Rob nous sort son pollen de slip': [2, 2],
   'Rob s\'habille en classique au moins une fois': [2, 2],
   'Rob fait une crise d\'angoisse avant/pendant l\'avion': [2, 2],
-  'Rob, Théo et Benbrik arrivent à 18h le premier jour': [2, 2],
+  'Rob, Theve et Benbrik arrivent à 18h le premier jour': [2, 2],
 
   'Alex perd son téléphone': [2, 2],
   'Alex se rase/cisaille le crâne': [2, 2],

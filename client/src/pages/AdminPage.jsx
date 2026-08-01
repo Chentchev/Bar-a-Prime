@@ -316,35 +316,41 @@ function TheoRobBatch({ existingEvents, onApplied }) {
       const patch = theoRobBatch[i];
       setProgress({ done: i + 1, total: theoRobBatch.length, updated, created, skipped });
 
-      if (patch.match) {
-        const event = (existingEvents ?? []).find((e) => e.title === patch.match);
-        if (!event) {
-          skipped += 1;
-          continue;
-        }
+      // Candidats de titre existant : les anciens noms possibles (`match`,
+      // string ou tableau - utile quand le pari a pu etre cree avec un
+      // mauvais nom avant correction) plus le titre final lui-meme, pour
+      // que relancer le lot plusieurs fois reste sans effet (idempotent).
+      const candidates = [
+        ...(Array.isArray(patch.match) ? patch.match : patch.match ? [patch.match] : []),
+        patch.title,
+      ].filter(Boolean);
+      const event = (existingEvents ?? []).find((e) => candidates.includes(e.title));
+
+      if (event) {
         const outcomesPayload = applyOutcomesByLabel(event.outcomes, patch.outcomes);
         if (outcomesPayload.some((o) => o === null)) {
           skipped += 1;
           continue;
         }
         try {
-          await api.updateEvent(player.id, event.id, { title: patch.title, outcomes: outcomesPayload });
+          await api.updateEvent(player.id, event.id, {
+            title: patch.title,
+            category: patch.category,
+            outcomes: outcomesPayload,
+          });
           updated += 1;
         } catch {
           skipped += 1;
         }
-      } else {
-        const alreadyExists = (existingEvents ?? []).some((e) => e.title === patch.title);
-        if (alreadyExists) {
-          skipped += 1;
-          continue;
-        }
+      } else if (patch.title) {
         try {
           await api.createEvent(player.id, { title: patch.title, category: patch.category, outcomes: patch.outcomes });
           created += 1;
         } catch {
           skipped += 1;
         }
+      } else {
+        skipped += 1;
       }
     }
 
@@ -356,10 +362,10 @@ function TheoRobBatch({ existingEvents, onApplied }) {
   return (
     <div className="mb-4 rounded-2xl bg-sky-50 p-4 ring-1 ring-sky-200 dark:bg-sky-950 dark:ring-sky-900">
       <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">
-        Lot Théo &amp; Rob
+        Lot Theve &amp; Rob
       </h2>
       <p className="mb-3 text-sm text-sky-800 dark:text-sky-200">
-        Applique les {theoRobBatch.length} paris/cotes donnés pour Théo et Rob : met à jour titres/cotes des paris
+        Applique les {theoRobBatch.length} paris/cotes donnés pour Theve et Rob : met à jour titres/cotes des paris
         existants qui matchent, crée les nouveaux (dont ceux à plusieurs issues comme "Rob choppe").
       </p>
       <button
@@ -369,7 +375,7 @@ function TheoRobBatch({ existingEvents, onApplied }) {
       >
         {busy
           ? `Application… ${progress?.done ?? 0}/${theoRobBatch.length}`
-          : `Appliquer le lot Théo & Rob (${theoRobBatch.length})`}
+          : `Appliquer le lot Theve & Rob (${theoRobBatch.length})`}
       </button>
       {!busy && progress && (
         <p className="mt-2 text-sm text-sky-700 dark:text-sky-300">

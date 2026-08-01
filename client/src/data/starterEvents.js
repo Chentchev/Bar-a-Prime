@@ -11,15 +11,15 @@ function bet(title, category) {
 }
 
 export const starterEvents = [
-  // Theo
-  bet('Théo appelle Malo', 'Théo'),
-  bet('Théo ne peut pas boire parce qu\'il a un Hyrox en 2028', 'Théo'),
-  bet('Théo boit un maté', 'Théo'),
-  bet('Théo est bourré, il se perd dans Barcelone', 'Théo'),
-  bet('Théo casse un objet', 'Théo'),
-  bet('Théo se pisse dessus', 'Théo'),
-  bet('Théo et Brik s\'éclipsent de la soirée', 'Théo'),
-  bet('Théo rate l\'avion', 'Théo'),
+  // Theve
+  bet('Theve appelle Malo', 'Theve'),
+  bet('Theve ne peut pas boire parce qu\'il a un Hyrox en 2028', 'Theve'),
+  bet('Theve boit un maté', 'Theve'),
+  bet('Theve est bourré, il se perd dans Barcelone', 'Theve'),
+  bet('Theve casse un objet', 'Theve'),
+  bet('Theve se pisse dessus', 'Theve'),
+  bet('Theve et Brik s\'éclipsent de la soirée', 'Theve'),
+  bet('Theve rate l\'avion', 'Theve'),
 
   // Rob
   bet('Rob nous casse les couilles avec sa barbe', 'Rob'),
@@ -31,7 +31,7 @@ export const starterEvents = [
   bet('Rob nous sort son pollen de slip', 'Rob'),
   bet('Rob s\'habille en classique au moins une fois', 'Rob'),
   bet('Rob fait une crise d\'angoisse avant/pendant l\'avion', 'Rob'),
-  bet('Rob, Théo et Benbrik arrivent à 18h le premier jour', 'Rob'),
+  bet('Rob, Theve et Benbrik arrivent à 18h le premier jour', 'Rob'),
 
   // Alex
   bet('Alex perd son téléphone', 'Alex'),
