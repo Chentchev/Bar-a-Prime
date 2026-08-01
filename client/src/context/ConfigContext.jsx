@@ -5,7 +5,7 @@ const ConfigContext = createContext(null);
 
 // Valeurs par defaut le temps que /api/config reponde, pour eviter un ecran
 // vide ou des divergences visibles au premier rendu.
-const DEFAULT_CONFIG = { minBetAmount: 10, startingBalance: 1000 };
+const DEFAULT_CONFIG = { betAmount: 20, startingBalance: 1000 };
 
 export function ConfigProvider({ children }) {
   const [config, setConfig] = useState(DEFAULT_CONFIG);

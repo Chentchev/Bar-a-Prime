@@ -1,6 +1,6 @@
 const db = require('../db');
 const { HttpError } = require('../middleware/errorHandler');
-const { MIN_BET_AMOUNT } = require('../config');
+const { BET_AMOUNT } = require('../config');
 
 // Place une mise : verifie que le pari est ouvert, que la deadline n'est pas
 // depassee et que le joueur a assez de solde, puis debite immediatement le
@@ -45,8 +45,8 @@ async function createBet(req, res) {
   if (!outcomeId) {
     throw new HttpError(400, 'outcomeId requis');
   }
-  if (!Number.isInteger(parsedAmount) || parsedAmount < MIN_BET_AMOUNT) {
-    throw new HttpError(400, `La mise minimum est de ${MIN_BET_AMOUNT} points`);
+  if (!Number.isInteger(parsedAmount) || parsedAmount !== BET_AMOUNT) {
+    throw new HttpError(400, `La mise est fixée à ${BET_AMOUNT} points`);
   }
 
   const betId = await placeBet(req.player, outcomeId, parsedAmount);

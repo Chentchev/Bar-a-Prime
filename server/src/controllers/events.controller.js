@@ -1,7 +1,7 @@
 const db = require('../db');
 const { HttpError } = require('../middleware/errorHandler');
 const { resolveEvent: resolveEventPayout } = require('../services/payout.service');
-const { MIN_BET_AMOUNT } = require('../config');
+const { BET_AMOUNT } = require('../config');
 
 async function outcomesWithStats(eventId) {
   const { rows } = await db.query(
@@ -155,10 +155,9 @@ async function resolveEvent(req, res) {
 }
 
 // Paris ouverts sur lesquels ce joueur n'a encore place aucune mise : sert a
-// la mise obligatoire (chaque pari dispo doit recevoir au moins
-// MIN_BET_AMOUNT points de chaque joueur). Un joueur dont le solde ne
-// permet plus d'atteindre ce minimum est exempte (on ne peut pas exiger ce
-// qu'il n'a pas).
+// la mise obligatoire (chaque pari dispo doit recevoir une mise de
+// BET_AMOUNT points de chaque joueur). Un joueur dont le solde ne permet
+// plus cette mise fixe est exempte (on ne peut pas exiger ce qu'il n'a pas).
 async function getPendingEvents(req, res) {
   const { rows: playerRows } = await db.query('SELECT * FROM players WHERE id = $1', [req.params.id]);
   const player = playerRows[0];
@@ -166,7 +165,7 @@ async function getPendingEvents(req, res) {
     throw new HttpError(404, 'Joueur introuvable');
   }
 
-  if (player.balance < MIN_BET_AMOUNT) {
+  if (player.balance < BET_AMOUNT) {
     return res.json([]);
   }
 

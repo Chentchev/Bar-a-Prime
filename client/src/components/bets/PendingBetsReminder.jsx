@@ -7,12 +7,12 @@ import OutcomeButton from '../events/OutcomeButton';
 import BetModal from './BetModal';
 
 // Rappel non bloquant (pas d'ecran plein ecran) : liste les paris ouverts
-// sur lesquels le joueur n'a pas encore mise le minimum requis. On peut
+// sur lesquels le joueur n'a pas encore place sa mise fixe. On peut
 // naviguer partout ailleurs dans l'app, ce bandeau est juste la pour ne
 // pas oublier - cf mise obligatoire.
 export default function PendingBetsReminder() {
   const { player } = usePlayer();
-  const { minBetAmount } = useConfig();
+  const { betAmount } = useConfig();
   const { data: pendingEvents, refresh } = usePolling(() => api.getPendingEvents(player.id), {
     interval: 8000,
     deps: [player.id],
@@ -29,7 +29,7 @@ export default function PendingBetsReminder() {
         ⚠️ Encore {pendingEvents.length} pari{pendingEvents.length > 1 ? 's' : ''} sans ta mise
       </h2>
       <p className="mb-3 text-sm text-amber-800 dark:text-amber-300">
-        Rappel : chaque pari ouvert doit recevoir au moins {minBetAmount} points de ta part.
+        Rappel : chaque pari ouvert doit recevoir une mise de {betAmount} points de ta part.
       </p>
 
       <div className="flex flex-col gap-3">

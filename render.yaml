@@ -18,5 +18,5 @@ services:
         value: Alex
       - key: STARTING_BALANCE
         value: "1000"
-      - key: MIN_BET_AMOUNT
+      - key: BET_AMOUNT
         value: "20"

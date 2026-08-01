@@ -47,12 +47,12 @@ Pas de mot de passe : un joueur crée son profil (`POST /api/players`) et récup
 | DELETE | `/api/events/:id` | Supprimer un pari (admin, refusé si des mises existent déjà) |
 | POST | `/api/bets` | Miser sur une issue |
 | GET | `/api/players/:id/pending-events` | Paris ouverts sur lesquels ce joueur n'a pas encore misé |
-| GET | `/api/config` | Réglages exposés au frontend (`minBetAmount`, `startingBalance`) |
+| GET | `/api/config` | Réglages exposés au frontend (`betAmount`, `startingBalance`) |
 | POST | `/api/admin/reset` | Réinitialise la partie : vide paris/mises, remet les soldes à `STARTING_BALANCE` (admin) |
 
-### Règle : mise obligatoire
+### Règle : mise fixe obligatoire
 
-Chaque pari ouvert doit recevoir au moins `MIN_BET_AMOUNT` points (défaut 20, configurable en env) de la part de chaque joueur. Un bandeau de rappel (non bloquant) s'affiche en bas de l'onglet Paris tant qu'il reste des paris sans mise du joueur courant, avec un accès direct pour miser dessus — jamais de mise automatique choisie par le système, c'est toujours au joueur de trancher, et il reste libre de naviguer partout ailleurs entre-temps. Un joueur dont le solde passe sous ce minimum est exempté (impossible d'exiger ce qu'il n'a plus).
+Chaque mise vaut exactement `BET_AMOUNT` points (défaut 20, configurable en env) — ni plus, ni moins. Un bandeau de rappel (non bloquant) s'affiche en bas de l'onglet Paris tant qu'il reste des paris sans mise du joueur courant, avec un accès direct pour miser dessus — jamais de mise automatique choisie par le système, c'est toujours au joueur de trancher, et il reste libre de naviguer partout ailleurs entre-temps. Un joueur dont le solde passe sous `BET_AMOUNT` est exempté (impossible d'exiger ce qu'il n'a plus).
 
 ## Frontend
 
