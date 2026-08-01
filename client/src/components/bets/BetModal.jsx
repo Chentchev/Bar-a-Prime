@@ -1,20 +1,23 @@
 import { useState } from 'react';
 import { api } from '../../api/client';
 import { usePlayer } from '../../context/PlayerContext';
+import { useConfig } from '../../context/ConfigContext';
 
 export default function BetModal({ event, outcome, onClose, onPlaced }) {
   const { player, refreshPlayer } = usePlayer();
-  const [amount, setAmount] = useState('');
+  const { minBetAmount } = useConfig();
+  const [amount, setAmount] = useState(String(minBetAmount));
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
   const numericAmount = Number(amount) || 0;
   const potentialGain = Math.round(numericAmount * outcome.odds);
   const overBudget = numericAmount > player.balance;
+  const belowMinimum = numericAmount < minBetAmount;
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (numericAmount <= 0 || overBudget) return;
+    if (belowMinimum || overBudget) return;
     setBusy(true);
     setError('');
     try {
@@ -47,7 +50,7 @@ export default function BetModal({ event, outcome, onClose, onPlaced }) {
         <input
           type="number"
           inputMode="numeric"
-          min="1"
+          min={minBetAmount}
           step="1"
           autoFocus
           value={amount}
@@ -55,6 +58,7 @@ export default function BetModal({ event, outcome, onClose, onPlaced }) {
           placeholder="0"
           className="w-full rounded-xl border-none bg-slate-100 px-4 py-3 text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-violet-500 dark:bg-slate-800"
         />
+        <p className="mt-1 text-xs text-slate-400">Mise minimum : {minBetAmount} pts</p>
 
         <div className="mt-3 flex items-center justify-between rounded-xl bg-violet-50 px-4 py-3 dark:bg-violet-950">
           <span className="text-sm text-slate-500">Gain potentiel</span>
@@ -62,6 +66,9 @@ export default function BetModal({ event, outcome, onClose, onPlaced }) {
         </div>
 
         {overBudget && <p className="mt-2 text-sm text-red-500">Solde insuffisant.</p>}
+        {!overBudget && belowMinimum && (
+          <p className="mt-2 text-sm text-red-500">La mise minimum est de {minBetAmount} points.</p>
+        )}
         {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
 
         <div className="mt-4 flex gap-2">
@@ -74,7 +81,7 @@ export default function BetModal({ event, outcome, onClose, onPlaced }) {
           </button>
           <button
             type="submit"
-            disabled={busy || numericAmount <= 0 || overBudget}
+            disabled={busy || belowMinimum || overBudget}
             className="flex-1 rounded-xl bg-violet-600 py-3 font-semibold text-white disabled:opacity-50"
           >
             Miser

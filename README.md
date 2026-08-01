@@ -45,6 +45,12 @@ Pas de mot de passe : un joueur crée son profil (`POST /api/players`) et récup
 | PATCH | `/api/events/:id` | Ouvrir/clôturer/éditer un pari (admin) |
 | POST | `/api/events/:id/resolve` | Résoudre un pari et redistribuer les gains (admin) |
 | POST | `/api/bets` | Miser sur une issue |
+| GET | `/api/players/:id/pending-events` | Paris ouverts sur lesquels ce joueur n'a pas encore misé |
+| GET | `/api/config` | Réglages exposés au frontend (`minBetAmount`, `startingBalance`) |
+
+### Règle : mise obligatoire
+
+Chaque pari ouvert doit recevoir au moins `MIN_BET_AMOUNT` points (défaut 10, configurable en env) de la part de chaque joueur. Tant qu'il reste des paris non couverts, le frontend affiche un écran plein écran non fermable (sauf pour changer de profil) obligeant à choisir une issue et miser dessus — jamais de mise automatique choisie par le système, c'est toujours au joueur de trancher. Un joueur dont le solde passe sous ce minimum est exempté (impossible d'exiger ce qu'il n'a plus).
 
 ## Frontend
 

@@ -1,6 +1,7 @@
 const db = require('../db');
 const { HttpError } = require('../middleware/errorHandler');
 const { resolveEvent: resolveEventPayout } = require('../services/payout.service');
+const { MIN_BET_AMOUNT } = require('../config');
 
 async function outcomesWithStats(eventId) {
   const { rows } = await db.query(
@@ -153,4 +154,36 @@ async function resolveEvent(req, res) {
   res.json(await serializeEvent(rows[0]));
 }
 
-module.exports = { listEvents, getEvent, createEvent, updateEvent, resolveEvent };
+// Paris ouverts sur lesquels ce joueur n'a encore place aucune mise : sert a
+// la mise obligatoire (chaque pari dispo doit recevoir au moins
+// MIN_BET_AMOUNT points de chaque joueur). Un joueur dont le solde ne
+// permet plus d'atteindre ce minimum est exempte (on ne peut pas exiger ce
+// qu'il n'a pas).
+async function getPendingEvents(req, res) {
+  const { rows: playerRows } = await db.query('SELECT * FROM players WHERE id = $1', [req.params.id]);
+  const player = playerRows[0];
+  if (!player) {
+    throw new HttpError(404, 'Joueur introuvable');
+  }
+
+  if (player.balance < MIN_BET_AMOUNT) {
+    return res.json([]);
+  }
+
+  const { rows } = await db.query(
+    `SELECT * FROM events
+     WHERE status = 'open'
+       AND (betting_deadline IS NULL OR betting_deadline > now())
+       AND id NOT IN (
+         SELECT outcomes.event_id FROM bets
+         JOIN outcomes ON outcomes.id = bets.outcome_id
+         WHERE bets.player_id = $1
+       )
+     ORDER BY created_at ASC`,
+    [req.params.id]
+  );
+
+  res.json(await Promise.all(rows.map(serializeEvent)));
+}
+
+module.exports = { listEvents, getEvent, createEvent, updateEvent, resolveEvent, getPendingEvents };

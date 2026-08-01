@@ -1,12 +1,7 @@
 const { randomUUID } = require('crypto');
 const db = require('../db');
 const { HttpError } = require('../middleware/errorHandler');
-
-const STARTING_BALANCE = Number(process.env.STARTING_BALANCE || 1000);
-const ADMIN_PSEUDOS = (process.env.ADMIN_PSEUDOS || '')
-  .split(',')
-  .map((p) => p.trim().toLowerCase())
-  .filter(Boolean);
+const { STARTING_BALANCE, ADMIN_PSEUDOS } = require('../config');
 
 function serializePlayer(row) {
   return {

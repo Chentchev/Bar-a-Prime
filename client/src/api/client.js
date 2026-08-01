@@ -28,7 +28,9 @@ export const api = {
   createPlayer: (pseudo) => request('/players', { method: 'POST', body: { pseudo } }),
   getPlayer: (playerId) => request(`/players/${playerId}`),
   getPlayerBets: (playerId) => request(`/players/${playerId}/bets`, { playerId }),
+  getPendingEvents: (playerId) => request(`/players/${playerId}/pending-events`, { playerId }),
   getLeaderboard: () => request('/leaderboard'),
+  getConfig: () => request('/config'),
 
   listEvents: (status) => request(`/events${status ? `?status=${status}` : ''}`),
   getEvent: (id) => request(`/events/${id}`),

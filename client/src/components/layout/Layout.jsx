@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import NavBar from './NavBar';
 import BottomNav from './BottomNav';
+import MandatoryBetGate from '../bets/MandatoryBetGate';
 
 export default function Layout() {
   return (
@@ -10,6 +11,7 @@ export default function Layout() {
         <Outlet />
       </main>
       <BottomNav />
+      <MandatoryBetGate />
     </div>
   );
 }
