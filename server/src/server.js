@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 3001;
 db.init()
   .then(() => {
     app.listen(PORT, () => {
-      console.log(`Bar a Prime API sur http://localhost:${PORT}`);
+      console.log(`Barca Prime 2012 API sur http://localhost:${PORT}`);
     });
   })
   .catch((err) => {

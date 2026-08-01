@@ -33,7 +33,7 @@ export default function ProfilePicker() {
   return (
     <div className="flex min-h-svh flex-col items-center justify-center gap-8 px-4 py-10">
       <div className="text-center">
-        <h1 className="text-4xl font-black tracking-tight text-violet-700 dark:text-violet-400">🍹 Bar à Prime</h1>
+        <h1 className="text-4xl font-black tracking-tight text-violet-700 dark:text-violet-400">🍹 Barça Prime 2012</h1>
         <p className="mt-1 text-sm text-slate-500">Les pronos entre potes pendant le séjour</p>
       </div>
 

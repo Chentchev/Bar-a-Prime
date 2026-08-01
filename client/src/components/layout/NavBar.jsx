@@ -6,7 +6,7 @@ export default function NavBar() {
 
   return (
     <header className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur dark:border-slate-800 dark:bg-slate-950/90">
-      <span className="text-lg font-black text-violet-700 dark:text-violet-400">🍹 Bar à Prime</span>
+      <span className="truncate text-lg font-black text-violet-700 dark:text-violet-400">🍹 Barça Prime 2012</span>
       <div className="flex items-center gap-2">
         <PlayerBadge player={player} />
         <button

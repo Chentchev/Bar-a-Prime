@@ -12,8 +12,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'Bar à Prime',
-        short_name: 'Bar à Prime',
+        name: 'Barça Prime 2012',
+        short_name: 'Barça Prime',
         description: 'Les pronos entre potes pendant le séjour',
         lang: 'fr',
         theme_color: '#6d28d9',

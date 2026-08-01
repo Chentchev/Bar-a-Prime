@@ -1,4 +1,4 @@
-# Bar à Prime
+# Barça Prime 2012
 
 Web app "pronos entre potes" : on parie des points virtuels sur ce qui va se passer pendant le séjour, avec des cotes fixées à la main par les admins.
 
