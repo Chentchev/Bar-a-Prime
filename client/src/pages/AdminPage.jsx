@@ -7,6 +7,7 @@ import CreateEventForm from '../components/events/CreateEventForm';
 import { starterEvents } from '../data/starterEvents';
 import { betOdds } from '../data/betOdds';
 import { theoRobBatch } from '../data/theoRobBatch';
+import { batch2 } from '../data/batch2';
 
 function AdminEventRow({ event, onChanged }) {
   const { player } = usePlayer();
@@ -300,7 +301,63 @@ function applyOutcomesByLabel(existingOutcomes, newOutcomes) {
   });
 }
 
-function TheoRobBatch({ existingEvents, onApplied }) {
+// Applique un seul patch (cf theoRobBatch.js / batch2.js) contre les paris
+// existants : matche par titre (`match` et/ou titre final, pour rester
+// idempotent), met a jour les cotes si la structure des issues est
+// identique, ou supprime+recree si elle a change (ex: Oui/Non -> plusieurs
+// paliers). Si la suppression echoue (des mises existent deja dessus), on
+// laisse l'ancien pari tel quel plutot que de perdre des points engages.
+async function applyOnePatch(player, existingEvents, patch) {
+  const candidates = [
+    ...(Array.isArray(patch.match) ? patch.match : patch.match ? [patch.match] : []),
+    patch.title,
+  ].filter(Boolean);
+  const event = (existingEvents ?? []).find((e) => candidates.includes(e.title));
+
+  if (!event) {
+    if (!patch.title) return 'skipped';
+    try {
+      await api.createEvent(player.id, { title: patch.title, category: patch.category, outcomes: patch.outcomes });
+      return 'created';
+    } catch {
+      return 'skipped';
+    }
+  }
+
+  const outcomesPayload = applyOutcomesByLabel(event.outcomes, patch.outcomes);
+  const sameStructure = outcomesPayload.length === event.outcomes.length && outcomesPayload.every((o) => o !== null);
+
+  if (sameStructure) {
+    try {
+      await api.updateEvent(player.id, event.id, {
+        title: patch.title,
+        category: patch.category,
+        outcomes: outcomesPayload,
+      });
+      return 'updated';
+    } catch {
+      return 'skipped';
+    }
+  }
+
+  try {
+    await api.deleteEvent(player.id, event.id);
+  } catch {
+    return 'skipped';
+  }
+  try {
+    await api.createEvent(player.id, {
+      title: patch.title ?? event.title,
+      category: patch.category ?? event.category,
+      outcomes: patch.outcomes,
+    });
+    return 'recreated';
+  } catch {
+    return 'skipped';
+  }
+}
+
+function PatchBatch({ title, description, patches, colors, existingEvents, onApplied }) {
   const { player } = usePlayer();
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(null);
@@ -308,83 +365,55 @@ function TheoRobBatch({ existingEvents, onApplied }) {
   async function handleApply() {
     setBusy(true);
     setProgress(null);
-    let updated = 0;
-    let created = 0;
-    let skipped = 0;
+    const counts = { updated: 0, created: 0, recreated: 0, skipped: 0 };
 
-    for (let i = 0; i < theoRobBatch.length; i++) {
-      const patch = theoRobBatch[i];
-      setProgress({ done: i + 1, total: theoRobBatch.length, updated, created, skipped });
-
-      // Candidats de titre existant : les anciens noms possibles (`match`,
-      // string ou tableau - utile quand le pari a pu etre cree avec un
-      // mauvais nom avant correction) plus le titre final lui-meme, pour
-      // que relancer le lot plusieurs fois reste sans effet (idempotent).
-      const candidates = [
-        ...(Array.isArray(patch.match) ? patch.match : patch.match ? [patch.match] : []),
-        patch.title,
-      ].filter(Boolean);
-      const event = (existingEvents ?? []).find((e) => candidates.includes(e.title));
-
-      if (event) {
-        const outcomesPayload = applyOutcomesByLabel(event.outcomes, patch.outcomes);
-        if (outcomesPayload.some((o) => o === null)) {
-          skipped += 1;
-          continue;
-        }
-        try {
-          await api.updateEvent(player.id, event.id, {
-            title: patch.title,
-            category: patch.category,
-            outcomes: outcomesPayload,
-          });
-          updated += 1;
-        } catch {
-          skipped += 1;
-        }
-      } else if (patch.title) {
-        try {
-          await api.createEvent(player.id, { title: patch.title, category: patch.category, outcomes: patch.outcomes });
-          created += 1;
-        } catch {
-          skipped += 1;
-        }
-      } else {
-        skipped += 1;
-      }
+    for (let i = 0; i < patches.length; i++) {
+      setProgress({ done: i, total: patches.length, ...counts });
+      const result = await applyOnePatch(player, existingEvents, patches[i]);
+      counts[result] += 1;
+      setProgress({ done: i + 1, total: patches.length, ...counts });
     }
 
-    setProgress({ done: theoRobBatch.length, total: theoRobBatch.length, updated, created, skipped });
     setBusy(false);
     onApplied();
   }
 
   return (
-    <div className="mb-4 rounded-2xl bg-sky-50 p-4 ring-1 ring-sky-200 dark:bg-sky-950 dark:ring-sky-900">
-      <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">
-        Lot Theve &amp; Rob
-      </h2>
-      <p className="mb-3 text-sm text-sky-800 dark:text-sky-200">
-        Applique les {theoRobBatch.length} paris/cotes donnés pour Theve et Rob : met à jour titres/cotes des paris
-        existants qui matchent, crée les nouveaux (dont ceux à plusieurs issues comme "Rob choppe").
-      </p>
+    <div className={`mb-4 rounded-2xl p-4 ring-1 ${colors.bg} ${colors.ring}`}>
+      <h2 className={`mb-1 text-sm font-semibold uppercase tracking-wide ${colors.heading}`}>{title}</h2>
+      <p className={`mb-3 text-sm ${colors.text}`}>{description}</p>
       <button
         onClick={handleApply}
         disabled={busy}
-        className="w-full rounded-xl bg-sky-600 py-3 font-semibold text-white disabled:opacity-50"
+        className={`w-full rounded-xl py-3 font-semibold text-white disabled:opacity-50 ${colors.button}`}
       >
-        {busy
-          ? `Application… ${progress?.done ?? 0}/${theoRobBatch.length}`
-          : `Appliquer le lot Theve & Rob (${theoRobBatch.length})`}
+        {busy ? `Application… ${progress?.done ?? 0}/${patches.length}` : `Appliquer (${patches.length})`}
       </button>
       {!busy && progress && (
-        <p className="mt-2 text-sm text-sky-700 dark:text-sky-300">
-          {progress.updated} mis à jour, {progress.created} créés, {progress.skipped} ignorés.
+        <p className={`mt-2 text-sm ${colors.text}`}>
+          {progress.updated} mis à jour, {progress.recreated} remplacés, {progress.created} créés,{' '}
+          {progress.skipped} ignorés.
         </p>
       )}
     </div>
   );
 }
+
+const SKY_COLORS = {
+  bg: 'bg-sky-50 dark:bg-sky-950',
+  ring: 'ring-sky-200 dark:ring-sky-900',
+  heading: 'text-sky-700 dark:text-sky-300',
+  text: 'text-sky-800 dark:text-sky-200',
+  button: 'bg-sky-600',
+};
+
+const TEAL_COLORS = {
+  bg: 'bg-teal-50 dark:bg-teal-950',
+  ring: 'ring-teal-200 dark:ring-teal-900',
+  heading: 'text-teal-700 dark:text-teal-300',
+  text: 'text-teal-800 dark:text-teal-200',
+  button: 'bg-teal-600',
+};
 
 function DangerZone({ onReset }) {
   const { player, refreshPlayer } = usePlayer();
@@ -456,7 +485,22 @@ export default function AdminPage() {
 
       <StarterImport existingEvents={events} onImported={refresh} />
       <ApplyOdds existingEvents={events} onApplied={refresh} />
-      <TheoRobBatch existingEvents={events} onApplied={refresh} />
+      <PatchBatch
+        title="Lot Theve & Rob"
+        description={`Applique les ${theoRobBatch.length} paris/cotes donnés pour Theve et Rob : met à jour titres/cotes des paris existants qui matchent, crée les nouveaux (dont ceux à plusieurs issues comme "Rob choppe").`}
+        patches={theoRobBatch}
+        colors={SKY_COLORS}
+        existingEvents={events}
+        onApplied={refresh}
+      />
+      <PatchBatch
+        title="Lot 2"
+        description={`Applique les ${batch2.length} paris/cotes suivants (Theve, Rob, Alex, Antoine, Benbrik). Gère aussi le changement de structure (ex: la veine d'Alex passe de Oui/Non à plusieurs paliers).`}
+        patches={batch2}
+        colors={TEAL_COLORS}
+        existingEvents={events}
+        onApplied={refresh}
+      />
 
       <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">Paris en cours</h2>
       {pending.length === 0 && <p className="text-sm text-slate-400">Aucun pari à gérer.</p>}
