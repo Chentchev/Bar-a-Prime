@@ -4,6 +4,7 @@ import { usePlayer } from '../context/PlayerContext';
 import { useConfig } from '../context/ConfigContext';
 import { usePolling } from '../hooks/usePolling';
 import CreateEventForm from '../components/events/CreateEventForm';
+import { starterEvents } from '../data/starterEvents';
 
 function AdminEventRow({ event, onChanged }) {
   const { player } = usePlayer();
@@ -56,6 +57,71 @@ function AdminEventRow({ event, onChanged }) {
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+function StarterImport({ existingEvents, onImported }) {
+  const { player } = usePlayer();
+  const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState(null);
+
+  async function handleImport() {
+    setBusy(true);
+    setProgress(null);
+    const existingTitles = new Set((existingEvents ?? []).map((e) => e.title.trim().toLowerCase()));
+    let created = 0;
+    let skipped = 0;
+
+    for (let i = 0; i < starterEvents.length; i++) {
+      const item = starterEvents[i];
+      setProgress({ done: i + 1, total: starterEvents.length, created, skipped });
+      if (existingTitles.has(item.title.trim().toLowerCase())) {
+        skipped += 1;
+        continue;
+      }
+      try {
+        // Cree "clos" : sinon la mise obligatoire forcerait tout le monde a
+        // parier sur les 61 d'un coup. L'admin rouvre les mises un par un
+        // au fil du sejour (bouton "Rouvrir les mises").
+        const createdEvent = await api.createEvent(player.id, item);
+        await api.updateEvent(player.id, createdEvent.id, { status: 'closed' });
+        created += 1;
+      } catch {
+        skipped += 1;
+      }
+    }
+
+    setProgress({ done: starterEvents.length, total: starterEvents.length, created, skipped });
+    setBusy(false);
+    onImported();
+  }
+
+  return (
+    <div className="mb-4 rounded-2xl bg-violet-50 p-4 ring-1 ring-violet-200 dark:bg-violet-950 dark:ring-violet-900">
+      <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-violet-700 dark:text-violet-300">
+        Import de départ
+      </h2>
+      <p className="mb-3 text-sm text-violet-800 dark:text-violet-200">
+        Crée d'un coup les {starterEvents.length} paris nettoyés de la liste du groupe, en statut{' '}
+        <strong>clôturé</strong> (cotes 2/2 par défaut, à ajuster ensuite). Ils n'apparaissent pas comme "à parier"
+        tant que tu ne cliques pas sur "Rouvrir les mises" — à toi de les ouvrir au fil du séjour. Les titres déjà
+        présents sont ignorés, pas de doublons.
+      </p>
+      <button
+        onClick={handleImport}
+        disabled={busy}
+        className="w-full rounded-xl bg-violet-600 py-3 font-semibold text-white disabled:opacity-50"
+      >
+        {busy
+          ? `Import en cours… ${progress?.done ?? 0}/${starterEvents.length}`
+          : `Importer les ${starterEvents.length} paris de base`}
+      </button>
+      {!busy && progress && (
+        <p className="mt-2 text-sm text-violet-700 dark:text-violet-300">
+          {progress.created} créés, {progress.skipped} ignorés (déjà présents).
+        </p>
+      )}
     </div>
   );
 }
@@ -127,6 +193,8 @@ export default function AdminPage() {
           />
         </div>
       )}
+
+      <StarterImport existingEvents={events} onImported={refresh} />
 
       <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">Paris en cours</h2>
       {pending.length === 0 && <p className="text-sm text-slate-400">Aucun pari à gérer.</p>}
