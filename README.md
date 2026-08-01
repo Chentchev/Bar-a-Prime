@@ -61,6 +61,8 @@ Chaque mise vaut exactement `BET_AMOUNT` points (défaut 20, configurable en env
 
 Ces deux boutons tournent depuis le navigateur de l'admin (pas de script serveur à lancer) : modifier le fichier, pousser sur la branche, redéployer, puis cliquer le bouton correspondant dans l'app.
 
+Pour ajuster une cote au cas par cas sans repasser par le code, chaque pari (tant qu'il n'est pas résolu) a un bouton **"Modifier les cotes"** dans Admin qui permet de taper directement les nouvelles valeurs.
+
 ## Frontend
 
 ```bash
